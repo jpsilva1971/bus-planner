@@ -1,0 +1,805 @@
+<html>
+<title>Bus Planner</i>
+<head>
+
+  <!-- CSS -->
+  <!--link rel="stylesheet" href="https://developers.route360.net/vendors/leaflet/leaflet.css" /-->
+  <!--link rel="stylesheet" href="https://developers.route360.net/vendors/jquery-ui/jquery-ui-1.10.0.custom.css" /-->
+  <!--link rel="stylesheet" href="https://developers.route360.net/resources/css/r360.css"-->
+
+
+  <!--  JS -->
+
+
+  <!--  Include r360.js -->
+  <!--script src="https://developers.route360.net/vendors/r360/r360-core-src.js"></script-->
+<!--script src="https://apps.route360.net/releases/r360-js/latest.js"></script-->
+  <!--  in case you want to use Google Maps -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD12-z3oc-pkYf-HnYO0fwHwu3RpA4F7JI&v=3.exp&libraries=places" type="text/javascript"></script>
+  <!--script src="https://www.google.com/uds/modules/gviz/gviz-api.js" type="text/javascript"></script-->
+  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <script type="text/javascript">
+    google.load('visualization', '1', {
+      'packages': ['table']
+    });
+  </script>
+
+
+  <!--script src="https://developers.route360.net/vendors/r360/r360-google.js"></script-->
+  
+
+
+  <!--  Include jQuery and jQuery UI -->
+  <!--script src="https://developers.route360.net/vendors/jquery/jquery.min.js"></script-->
+   <script src="https://code.jquery.com/jquery-2.1.3.min.js" integrity="sha256-ivk71nXhz9nsyFDoYoGf2sbjrR9ddh+XDkCcfZxjvcM=" crossorigin="anonymous"></script>
+  <!--script src="https://developers.route360.net/vendors/jquery-ui/jquery-ui.min.js"></script-->
+<script>
+//function main() {
+ function main() {
+  var populacaoTotal = 0;
+  var populacaoMenorTotal = 0;
+  var populacaoSeniorTotal = 0;
+  var populacaoReforTotal = 0;
+  var populacaoSemActTotal = 0;
+  var populacaoEstudanteTotal = 0;
+  var populacaoDesempregadoTotal = 0;
+  var populacaoEmpregadoTotal = 0;
+  var populacaoAnalfabetoTotal = 0;
+  var populacaoUtilizadorArr = [];
+  var populacaoUtilizador, estacionamento1, estacionamento2, estacionamento3;
+  var populacao15A24Total = 0;
+  //var consumo100 = 45.37478;
+  var consumo100 = 13.7
+  //var consumo100 = 15
+  var layerCensos;
+  var POIS = new Array();
+  var POIS2 = new Array();
+  var pontoRecolha = new google.maps.LatLng(38.736057, -9.386503);
+  var distanceOrigin;
+  var poligonoLinhaStr = "";
+  //var showIsochrone = document.getElementById("isochroneForm").value;
+  var zona = document.getElementById("selectorForm").value;
+  var modo = document.getElementById("interceptForm").value;
+  var routeForm = document.getElementById("routeForm").value;
+  var idKML
+  var percursoKm = 0;
+  var numberVehicles = parseInt(document.getElementById("numberVehicles").value);
+  var numberDrivers = 1;
+  var horasUteis = 15;
+  var horasFds = 13 ;
+  var tempoParagem = parseInt(document.getElementById("tempoParagem").value);
+  var tempoTerminal = parseInt(document.getElementById("tempoTerminal").value);
+  if (tempoTerminal == 0) {
+    tempoTerminal = parseInt(document.getElementById("tempoParagem").value);
+  };
+  var carreirasKML = [{
+    carreira: 400,
+    kml: "0B30sCBP_rdwYbktmajEwSm8xZjg"
+  }, {
+    carreira: 401,
+    kml: "0B30sCBP_rdwYMWE2ZjNzMmlVd2c"
+  }, {
+    carreira: 404,
+    kml: "0B30sCBP_rdwYZ0JYMjAwaS1Md3c"
+  }, {
+    carreira: 1001,
+    kml: "0B30sCBP_rdwYbE9GT0wyTG4xeWc"
+  }, {
+    carreira: 1002,
+    kml: "0B30sCBP_rdwYbi1iRVpHbFhVRjg"
+  }, {
+    carreira: 1003,
+    kml: "0B30sCBP_rdwYUUxoVlBOUTZCMnc"
+  }, {
+    carreira: 427,
+    kml: "0B30sCBP_rdwYOTJmUFYtM1lCSVE"
+  }, {
+    carreira: 1004,
+    kml: "0B30sCBP_rdwYanBfTFM2UElXaG8"
+  }, {
+    carreira: 1005,
+    kml: "0B30sCBP_rdwYSUR4b293VDN5Mm8"
+  }, {
+    carreira: 1006,
+    kml: "0B30sCBP_rdwYQW9kcVlWeWMyT2c"
+  }, {
+    carreira: 1007,
+    kml: "0B30sCBP_rdwYUFgwZFc0ZkNUMTQ"
+  }, {
+    carreira: 1008,
+    kml: "0B30sCBP_rdwYSUcyZ1IwTUlsOFk"
+  }, {
+    carreira: 1010,
+    kml: "0B30sCBP_rdwYZVJfNnR6YkZvVVU"
+  }];
+
+  if (zona == null) {
+    zona = '1001';
+  }
+
+  if (document.getElementById('map')) {
+
+    // Coordinates to center the map
+    //var myLatlng = new google.maps.LatLng(38.711280, -9.392121);
+    var myLatlng = new google.maps.LatLng(38.711280, -9.392121);
+    // Other options for the map, pretty much selfexplanatory
+    var mapOptions = {
+      zoom: 15,
+      center: myLatlng,
+      mapTypeControl: false,
+      //mapTypeId: google.maps.MapTypeId.ROADMAP
+      //mapTypeId: 'CascaisCartografiaBase'
+    };
+    var map = new google.maps.Map(document.getElementById("map"), mapOptions);
+    map.setTilt(0);
+    var distanceService = new google.maps.DistanceMatrixService();
+
+    // Isochrone calculation and drawing main function
+    // set the service API-key, this is a private key
+    // please contact Route360 and request your own key
+    //r360.config.serviceKey = 'IETAES05XT3WXZX3LJBR';
+    //r360.config.serviceUrl = 'https://service.route360.net/iberia/';
+    // each map get's it's own polygon layer
+    //var colorPolygonLayer = new GoogleMapsPolygonLayer(map);
+
+    //function showPolygons(lat, lng, layer) {
+    function showPolygons(lat, lng) {
+
+      //var travelOptions = r360.travelOptions();
+      var multipleSources = [];
+      if (lat != 0) {
+        var originSource = {
+          lat: lat,
+          lng: lng
+        };
+        multipleSources = [originSource];
+      }
+
+      for (var i = 0, len = POIS2.length; i < len; i++) {
+        if (i == 10) {
+          //the r360 service only allows 15 points to be calculated at once
+          break;
+        };
+        multipleSources[i] = POIS2[i];
+      }
+
+      //travelOptions.setSources(multipleSources);
+      //travelOptions.setIntersectionMode("union");
+      //travelOptions.setTravelTimes([300, 600, 900]);
+      //travelOptions.setTravelTimes([300, 600, 900, 1200, 1500, 1800]);
+      //r360.config.defaultTravelTimeControlOptions.travelTimes;
+      var today = new Date();
+      var dd = today.getDate();
+      var mm = today.getMonth() + 1; //January is 0!
+      var yyyy = today.getFullYear();
+
+      today = yyyy + mm + dd;
+      /*setTravelType options are: transit,car,walk,bike*/
+      //travelOptions.setTravelType('walk');
+      // choose only one, either setBikeUphill or setDownhill, never both simultaneously
+      //travelOptions.setBikeUphill(20);
+      //travelOptions.setDownhill(-10); 
+      //travelOptions.setDate(r360.Util.getCurrentDate());
+      //travelOptions.setTime(r360.Util.getHoursAndMinutesInSeconds());
+
+      // call the service
+      /*r360.PolygonService.getTravelTimePolygons(travelOptions, function(polygons) {
+          layer.update(polygons);
+          layer.fitMap();
+        },
+
+        function(status, message) {
+
+          $("#r360-gettingstarted-error").show('fade').html("We are currently performing service \
+                maintenance. The service will be available shortly.");
+        });*/
+    }
+    // end of the isochrone bit
+
+    // attach fixed points KML
+    var bicasLayer = new google.maps.KmlLayer({
+      //kml Bicas
+      url: 'https://docs.google.com/uc?id=0B30sCBP_rdwYMVhIX1p4WUN4Vjg',
+      preserveViewport: 1
+    });
+    //bicasLayer.setMap(map);
+
+    // attach Planned Bicas KML
+    var bicasPlaneadasLayer = new google.maps.KmlLayer({
+      //kml Bicas planeadas
+      url: 'https://docs.google.com/uc?id=0B30sCBP_rdwYSVRLWjdMSFRGOXc',
+      preserveViewport: 1
+    });
+    //bicasPlaneadasLayer.setMap(map);
+
+    //Get KML from carreirasKML array
+    function getIdKML(carreira) {
+      if (carreira.carreira == zona) {
+        idKML = carreira.kml;
+      }
+    };
+    //carreirasKML.forEach(getIdKML);
+
+    //Get Paragens from Fusion Table
+    var queryParcometros = encodeURIComponent('SELECT Latitude,Longitude,Id,Carreira FROM 1bBwxB0U-ezaARmZanzFZTU-c35KCspOtVm69aQYV WHERE Carreira CONTAINS IGNORING CASE ' + zona + ' ORDER BY \'Id\' ASC');
+    var gvizParcometrosQuery = new google.visualization.Query('https://www.google.com/fusiontables/gvizdata?tq=' + queryParcometros);
+    gvizParcometrosQuery.send(function(response) {
+      //check if the user selects the isochrone option to call the isochrone main function
+      //if (showIsochrone == "true") {
+        function loadPOIS2(item) {
+          POIS2.push({
+            lat: parseFloat(item.c[0].v),
+            lng: parseFloat(item.c[1].v)
+          });
+        };
+        response.G.Nf.forEach(loadPOIS2);
+        //showPolygons(0, 0, colorPolygonLayer);
+        showPolygons(0, 0);
+      //};
+
+      if (routeForm == "auto") {
+        //draw route
+        var directionsService = new google.maps.DirectionsService;
+        var directionsDisplay = new google.maps.DirectionsRenderer({
+          draggable: true,
+          //suppressMarkers: true,
+          map: map
+        });
+
+        function computeTotalDistance(result) {
+          var total = 0;
+          var bestTime = 0;
+          var myroute = result.routes[0];
+
+          //if (showIsochrone == "true") {
+            POIS2 = [];
+            result.routes[0].legs.forEach(function(entry) {
+              POIS2.push({
+                lat: parseFloat(entry.start_location.lat()),
+                lng: parseFloat(entry.start_location.lng())
+              });
+            });
+            showPolygons(0, 0);
+          //};
+          //create the URL to generate raster image of the route
+          var linkRoute = "https://maps.googleapis.com/maps/api/staticmap?sensor=false&size=640x640&style=feature:road|element:labels.text|color:0xffffff|visibility:simplified|feature:road|labels.text.stroke|color:0x000000&path=weight:10%7Ccolor:blue%7Cenc:" + encodeURIComponent(myroute.overview_polyline);
+          
+          distanceService.getDistanceMatrix({
+            origins: [POIS2[0]],
+            destinations: [pontoRecolha],
+            travelMode: 'DRIVING',
+            //transitOptions: TransitOptions,
+            //drivingOptions: DrivingOptions,
+            //unitSystem: UnitSystem,
+            avoidHighways: true,
+            avoidTolls: true
+          }, function(responseDistance, status) {
+            if (status == "OK") {
+              var origins = responseDistance.originAddresses;
+              var destinations = responseDistance.destinationAddresses;
+
+              for (var i = 0, len = origins.length; i < len; i++) {
+                var results = responseDistance.rows[i].elements;
+                for (var j = 0; j < results.length; j++) {
+                  var element = results[j];
+                  distanceOrigin = parseFloat(element.distance.value);
+                }
+              }
+            }
+          });
+
+          var numParagensRecalc = myroute.legs.length;
+          for (var i = 0; i < myroute.legs.length; i++) {
+            total += myroute.legs[i].distance.value;
+            bestTime += myroute.legs[i].duration.value;
+          }
+          //percursoTempo = ((total / 20000) * 3600 + ((numParagensRecalc - 1) * tempoParagem) + tempoTerminal);
+          var percursoTempo = ((total / 35000) * 3600 + ((numParagensRecalc - 1) * tempoParagem) + tempoTerminal);
+          var percursoTempo0 = (total / 10000) * 3600 + (((numParagensRecalc - 1) * tempoParagem) + tempoTerminal);
+
+          //calcular numero de motoristas
+          numberDrivers = 0;
+          numberDrivers = Math.max(numberDrivers, numberVehicles);
+          var secsDiariosUteis = horasUteis * 3600;
+          var secsDiariosFds = horasFds * 3600;
+          var secsSemana = (5 * secsDiariosUteis) + (2 * secsDiariosFds);
+          var secsAno = secsSemana * 52;
+          numberDrivers = Math.max((parseInt(secsDiariosUteis * numberVehicles / 26100)), (parseInt(secsDiariosFds * numberVehicles / 26100)), (parseInt(secsSemana * numberVehicles / 130500)), (parseInt(secsAno * numberVehicles / 6264000)));
+          //numberDrivers = Math.max(numberDrivers,(parseInt(secsDiariosUteis * numberVehicles / 26100) + 1), (parseInt(secsDiariosFds * numberVehicles / 26100) + 1), (parseInt(secsSemana * numberVehicles / 130500) + 1), (parseInt(secsAno * numberVehicles / 6264000) + 1))+1;
+          
+          var periodicidade0 = percursoTempo0 / numberVehicles;
+          var horas = parseInt(percursoTempo / 3600);
+          var horas0 = parseInt(percursoTempo0 / 3600);
+          var periodicidade0Horas = parseInt(periodicidade0 / 3600);
+          var minutos = parseInt((percursoTempo / 60) - (horas * 60));
+          var minutos0 = parseInt((percursoTempo0 / 60) - (horas0 * 60));
+          var periodicidade0Minutos = parseInt((periodicidade0 / 60) - (periodicidade0Horas * 60));
+          var bestHoras = parseInt(bestTime / 3600);
+          var bestMinutos = parseInt((bestTime / 60) - (bestHoras * 60));
+          if (parseInt(minutos) < 10) {
+            minutos = "0" + minutos.toString()
+          };
+          if (parseInt(minutos0) < 10) {
+            minutos0 = "0" + minutos0.toString()
+          };
+          if (parseInt(periodicidade0Minutos) < 10) {
+            periodicidade0Minutos = "0" + periodicidade0Minutos.toString()
+          };
+          if (parseInt(bestMinutos) < 10) {
+            bestMinutos = "0" + bestMinutos.toString()
+          };
+          var tempoStr = horas + "h" + minutos + "m";
+          var tempo0Str = horas0 + "h" + minutos0 + "m";
+          var periodicidade0Str = periodicidade0Horas + "h" + periodicidade0Minutos + "m";
+          var bestTimeStr = bestHoras + "h" + bestMinutos + "m";
+          var numPercursosDiarios = parseInt((horasUteis * 3600) / percursoTempo0);
+          var numPercursosDiariosFeriados = parseInt((horasFds * 3600) / percursoTempo0);
+          var mediaAnualKm = ((((260 * ((numPercursosDiarios * total) + (2 * distanceOrigin))) + 105 * (numPercursosDiariosFeriados * total) + (2 * distanceOrigin)) + ((262 * ((numPercursosDiarios * total) + (2 * distanceOrigin))) + 104 * (numPercursosDiariosFeriados * total) + (2 * distanceOrigin))) / 2) * numberVehicles;
+          var consumoAnual = (mediaAnualKm * consumo100 / 100000).toFixed(1); // consumo médio segundo Anexo 8 de www.ua.pt/ReadObject.aspx?obj=18468 pag 52
+
+           //Cálculo de custo
+          var custoAnual=0;
+          //custoAnual = (numberDrivers * 14 * 889.1 * 1.65); // custo dos motoristas de acordo com http://www.dgap.gov.pt/upload/homepage/TAB_LVCR_POSICOES_REMUNERATORIAS.pdf
+          // custoAnual = (numberDrivers * 14 * 1000 * 1.70); // custo dos motoristas com vencimento minimamente atractivo
+             custoAnual = (numberDrivers * 14 * 1402.5); // custo dos motoristas com vencimento minimamente atractivo
+          custoAnual = custoAnual + (numberVehicles * 63.75); // inspecção periódica (média anual de 45 por inspecção, anual até 7 anos, semestral até 12 anos)
+          custoAnual = custoAnual + (numberVehicles * 1500); // IUC (anual)
+          custoAnual = custoAnual + (consumoAnual * 1.25); // diesel
+          //custoAnual = custoAnual + (mediaAnualKm * 0.287 / 1000); // custos externos (operação) segundo https://ria.ua.pt/bitstream/10773/609/1/2009000632.pdf e www.ua.pt/ReadObject.aspx?obj=18468
+          //custoAnual = custoAnual + (mediaAnualKm * 0.145 / 1000); // custos manutenção segundo Anexo 8 de https://ria.ua.pt/bitstream/10773/609/1/2009000632.pdf e www.ua.pt/ReadObject.aspx?obj=18468
+          custoAnual = custoAnual + (mediaAnualKm * 0.696645768 / 1000); // custos manutenção de acordo com média dada nas oficinas
+          custoAnual = custoAnual + (numberVehicles * 2000); // seguro anual médio por veículo
+          custoAnual = custoAnual + (numberVehicles * 5556); // Vigilância
+          custoAnual = custoAnual + (numberVehicles * 6000); // Lavagens e limpeza interior
+          //custoAnual = custoAnual + (numberVehicles * 225); // Calibração tacómetros
+          custoAnual = custoAnual + (numberDrivers * ((2223 / 5) + 1112)); // Formação motoristas (CAM de 5 em 5 anos + teambuilding)
+          
+          
+          document.getElementById('percursoKmDiv').innerHTML = "<table border=0 width=300><tr><td>Ida e volta:</td><td align=right>" + (total / 1000).toFixed(2) + " km</td><tr><td>Distância à recolha:</td><td align=right>" + (distanceOrigin / 1000).toFixed(2) + " km</td></tr><tr><td>Nº de paragens:</td><td align=right>" + numParagensRecalc + "</td></tr><tr><td>Duração c/ paragens:<br>(velocidade média)</td><td align=right>" + tempoStr + "-" + tempo0Str + "<br>(10-20 km/h)</td></tr><tr><td>Duração s/ paragens:<br>(velocidade média)</td><td align=right>" + bestTimeStr + "<br>(" + ((total / 1000) / (((bestHoras * 60) + bestMinutos) / 60)).toFixed(2) + " km/h)</td></tr><tr><td>Nº circuitos dias úteis:<br>(máx. passageiros)</td><td align=right>" + numPercursosDiarios * numberVehicles + "<br>(" + numPercursosDiarios * numberVehicles * 63 + ")</td></tr><tr><td>Nº circuitos dias não úteis:<br>(máx. passageiros)</td><td align=right>" + numPercursosDiariosFeriados * numberVehicles + "<br>(" + numPercursosDiariosFeriados * numberVehicles * 63 + ")</td></tr><tr><td>Tempo máx. de espera:</td><td align=right>" + periodicidade0Str + "</td></tr><tr><td>Média anual percorrida:</td><td align=right>" + (mediaAnualKm / 1000).toFixed(2) + " km <a title='* incluindo trajectos ao ponto de recolha'> *</a></td></tr><tr><td>Quilómetros/viatura:</td><td align=right>" + (((mediaAnualKm / 1000) / numberVehicles)/365).toFixed(2) + " KPVPD</td></tr><tr><td>Consumo anual médio:</td><td align=right>" + consumoAnual + " l<a title='* Tendo em conta média de 45.37l/100km'> *</a></td></tr><tr><td>Motoristas necessários:</td><td align=right>" + numberDrivers + "<a title='* Tendo em conta horário de serviço pré-definido (" + horasFds + "h aos fins de semana e feriados, " + horasUteis + "h nos dias úteis)'> *</a></td></tr><tr><td>Custos anuais de operação:</td><td align=right>€" + custoAnual.toFixed(2) + "<a title='* Não inclui investimento'> *</a></td></tr><tr><td>Imagem do circuito</td><td align=right><a href='" + linkRoute + "' target='_blank'><img src=" + linkRoute + " border=0 width=34 height=34 title='Descarregar imagem'></a></td></tr></table>";
+        };
+        directionsDisplay.addListener('directions_changed', function() {
+          computeTotalDistance(directionsDisplay.getDirections());
+        });
+
+        //var origin = new google.maps.LatLng(parseFloat(response.G.Nf[0].c[0].v), parseFloat(response.G.Nf[0].c[1].v));
+        
+        var origin = new google.maps.LatLng(parseFloat(response.G.Nf[0].c[0].v), parseFloat(response.G.Nf[0].c[1].v));
+
+        var destination = new google.maps.LatLng(parseFloat(response.G.Nf[0].c[0].v), parseFloat(response.G.Nf[0].c[1].v));
+        var waypts = new Array();
+
+        response.G.Nf.forEach(function(waypt) {
+          if (response.G.Nf.indexOf(waypt) != 0 && response.G.Nf.indexOf(waypt) < 9) {
+            waypts.push({
+              location: waypt.c[0].v + "," + waypt.c[1].v,
+              stopover: true
+            });
+          };
+        });
+        
+        distanceService.getDistanceMatrix({
+          //origins: [origin],
+          origins: [origin],
+          destinations: [pontoRecolha],
+          travelMode: 'DRIVING',
+          //transitOptions: TransitOptions,
+          //drivingOptions: DrivingOptions,
+          //unitSystem: UnitSystem,
+          avoidHighways: true,
+          avoidTolls: true
+        }, function(responseDistance, status) {
+          if (status == "OK") {
+                    
+            var origins = responseDistance.originAddresses;
+            
+            
+            var destinations = responseDistance.destinationAddresses;
+
+            for (var i = 0; i < origins.length; i++) {
+              var results = responseDistance.rows[i].elements;
+              for (var j = 0; j < results.length; j++) {
+                var element = results[j];
+                distanceOrigin = parseFloat(element.distance.value);
+              }
+            }
+          }
+        });
+        directionsService.route({
+          origin: origin,
+          destination: destination,
+          waypoints: waypts,
+          optimizeWaypoints: true,
+          //avoidHighways: true,
+          avoidTolls: true,
+          provideRouteAlternatives: false,
+          travelMode: 'DRIVING',
+          drivingOptions: {
+            departureTime: new Date(Date.now()),
+            trafficModel: 'pessimistic'
+          }
+        }, function(responseRoute, status) {
+          if (status === 'OK') {
+            //numberDrivers = 1;
+            //create the URL to generate raster image of the route
+            var linkRoute = "https://maps.googleapis.com/maps/api/staticmap?sensor=false&size=640x640&style=feature:road|element:labels.text|color:0xffffff|visibility:simplified|feature:road|labels.text.stroke|color:0x000000&path=weight:10%7Ccolor:red%7Cenc:" + encodeURIComponent(responseRoute.routes[0].overview_polyline);
+
+            directionsDisplay.setDirections(responseRoute);
+            var numParagens = responseRoute.routes[0].legs.length;
+            var bestTime = 0;
+            responseRoute.routes[0].legs.forEach(function(legDistance) {
+              percursoKm = percursoKm + legDistance.distance.value;
+              bestTime = bestTime + legDistance.duration.value;
+            });
+            var percursoTempo = (percursoKm / 35000) * 3600 + (((numParagens - 1) * tempoParagem) + tempoTerminal);
+            //percursoTempo = (percursoKm / 20000) * 3600 + (((numParagens - 1) * tempoParagem) + tempoTerminal);
+            var percursoTempo0 = (percursoKm / 10000) * 3600 + (((numParagens - 1) * tempoParagem) + tempoTerminal);
+            var periodicidade0 = percursoTempo0 / numberVehicles;
+            //calcular numero de motoristas
+            numberDrivers = Math.max(numberDrivers, numberVehicles);
+            var secsDiariosUteis = horasUteis * 3600;
+            var secsDiariosFds = horasFds * 3600;
+            var secsSemana = (5 * secsDiariosUteis) + (2 * secsDiariosFds);
+            var secsAno = secsSemana * 52;
+            numberDrivers = Math.max((parseInt(secsDiariosUteis * numberVehicles / 26100)), (parseInt(secsDiariosFds * numberVehicles / 26100)), (parseInt(secsSemana * numberVehicles / 130500)), (parseInt(secsAno * numberVehicles / 6264000)));
+            //numberDrivers = 4;
+            //numberDrivers = Math.max((parseInt(secsDiariosUteis * numberVehicles / 26100) + 1), (parseInt(secsDiariosFds * numberVehicles / 26100) + 1), (parseInt(secsSemana * numberVehicles / 130500) + 1), (parseInt(secsAno * numberVehicles / 6264000) + 1))+1;
+
+            var horas = parseInt(percursoTempo / 3600);
+            var horas0 = parseInt(percursoTempo0 / 3600);
+            var periodicidade0Horas = parseInt(periodicidade0 / 3600);
+            var minutos = parseInt((percursoTempo / 60) - (horas * 60));
+            var minutos0 = parseInt((percursoTempo0 / 60) - (horas0 * 60));
+            var periodicidade0Minutos = parseInt((periodicidade0 / 60) - (periodicidade0Horas * 60));
+            var bestHoras = parseInt(bestTime / 3600);
+            var bestMinutos = parseInt((bestTime / 60) - (bestHoras * 60));
+            if (parseInt(minutos) < 10) {
+              minutos = "0" + minutos.toString()
+            };
+            if (parseInt(minutos0) < 10) {
+              minutos0 = "0" + minutos0.toString()
+            };
+            if (parseInt(periodicidade0Minutos) < 10) {
+              periodicidade0Minutos = "0" + periodicidade0Minutos.toString()
+            };
+            if (parseInt(bestMinutos) < 10) {
+              bestMinutos = "0" + bestMinutos.toString()
+            };
+            var tempoStr = horas + "h" + minutos + "m";
+            var tempo0Str = horas0 + "h" + minutos0 + "m";
+            var periodicidade0Str = periodicidade0Horas + "h" + periodicidade0Minutos + "m";
+            var bestTimeStr = bestHoras + "h" + bestMinutos + "m";
+            var numPercursosDiarios = parseInt((horasUteis * 3600) / percursoTempo0);
+            var numPercursosDiariosFeriados = parseInt((horasFds * 3600) / percursoTempo0);
+            var mediaAnualKm = ((((260 * ((numPercursosDiarios * percursoKm) + (2 * distanceOrigin))) + 105 * (numPercursosDiariosFeriados * percursoKm) + (2 * distanceOrigin)) + ((262 * ((numPercursosDiarios * percursoKm) + (2 * distanceOrigin))) + 104 * (numPercursosDiariosFeriados * percursoKm) + (2 * distanceOrigin))) / 2) * numberVehicles;
+            var consumoAnual = (mediaAnualKm * consumo100 / 100000).toFixed(1); // consumo médio segundo Anexo 8 de https://ria.ua.pt/bitstream/10773/609/1/2009000632.pdf e www.ua.pt/ReadObject.aspx?obj=18468
+
+            //Cálculo de custo
+          //custoAnual = (numberDrivers * 14 * 889.1 * 1.65); // custo dos motoristas de acordo com http://www.dgap.gov.pt/upload/homepage/TAB_LVCR_POSICOES_REMUNERATORIAS.pdf
+           // custoAnual = (numberDrivers * 14 * 1000 * 1.70); // custo dos motoristas com vencimento minimamente atractivo
+             var custoAnual = (numberDrivers * 14 * 1402.5); // custo dos motoristas com vencimento minimamente atractivo
+          custoAnual = custoAnual + (numberVehicles * 63.75); // inspecção periódica (média anual de 45 por inspecção, anual até 7 anos, semestral até 12 anos)
+          custoAnual = custoAnual + (numberVehicles * 1500); // IUC (anual)
+          custoAnual = custoAnual + (consumoAnual * 1.25); // diesel
+          //custoAnual = custoAnual + (mediaAnualKm * 0.287 / 1000); // custos externos (operação) segundo https://ria.ua.pt/bitstream/10773/609/1/2009000632.pdf e www.ua.pt/ReadObject.aspx?obj=18468
+          //custoAnual = custoAnual + (mediaAnualKm * 0.145 / 1000); // custos manutenção segundo Anexo 8 de https://ria.ua.pt/bitstream/10773/609/1/2009000632.pdf e www.ua.pt/ReadObject.aspx?obj=18468
+          custoAnual = custoAnual + (mediaAnualKm * 0.696645768 / 1000); // custos manutenção
+          custoAnual = custoAnual + (numberVehicles * 2000); // seguro anual médio por veículo
+          custoAnual = custoAnual + (numberVehicles * 5556); // Vigilância
+          custoAnual = custoAnual + (numberVehicles * 6000); // Lavagens e limpeza interior
+          //custoAnual = custoAnual + (numberVehicles * 225); // Calibração tacómetros
+          custoAnual = custoAnual + (numberDrivers * ((2223 / 5) + 1112)); // Formação motoristas (CAM de 5 em 5 anos + teambuilding)
+ 
+            document.getElementById('percursoKmDiv').innerHTML = "<table border=0 width=300><tr><td>Ida e volta:</td><td align=right>" + (percursoKm / 1000).toFixed(2) + " km</td><tr><td>Distância à recolha:</td><td align=right>" + (distanceOrigin / 1000).toFixed(2) + " km</td></tr><tr><td>Nº de paragens:</td><td align=right>" + numParagens + "</td></tr><tr><td>Duração c/ paragens:<br>(velocidade média)</td><td align=right>" + tempoStr + "-" + tempo0Str + "<br>(10-20 km/h)</td></tr><tr><td>Duração s/ paragens:<br>(velocidade média)</td><td align=right>" + bestTimeStr + "<br>(" + ((percursoKm / 1000) / (((bestHoras * 60) + bestMinutos) / 60)).toFixed(2) + " km/h)</td></tr><tr><td>Nº circuitos dias úteis:<br>(máx. passageiros)</td><td align=right>" + numPercursosDiarios * numberVehicles + "<br>(" + numPercursosDiarios * numberVehicles * 63 + ")</td></tr><tr><td>Nº circuitos dias não úteis:<br>(máx. passageiros)</td><td align=right>" + numPercursosDiariosFeriados * numberVehicles + "<br>(" + numPercursosDiariosFeriados * numberVehicles * 63 + ")</td></tr><tr><td>Tempo máx. de espera:</td><td align=right>" + periodicidade0Str + "</td></tr><tr><td>Média anual percorrida:</td><td align=right>" + (mediaAnualKm / 1000).toFixed(2) + " km <a title='* incluindo trajectos ao ponto de recolha'> *</a></td></tr><tr><td>Quilómetros/viatura:</td><td align=right>" + (((mediaAnualKm / 1000) / numberVehicles)/365).toFixed(2) + " KPVPD</td></tr><tr><td>Consumo anual médio:</td><td align=right>" + consumoAnual + " l<a title='* Tendo em conta média de 45.37l/100km'> *</a></td></tr><tr><td>Motoristas necessários:</td><td align=right>" + numberDrivers + "<a title='* Tendo em conta horário de serviço pré-definido (" + horasFds + "h aos fins de semana e feriados, " + horasUteis + "h nos dias úteis)'> *</a></td></tr><tr><td>Custos anuais de operação:</td><td align=right>€" + custoAnual.toFixed(2) + "<a title='* Não inclui investimento'> *</a></td></tr><tr><td>Imagem do circuito:</td><td align=right><a href='" + linkRoute + "' target='_blank'><img src=" + linkRoute + " border=0 width=34 height=34 title='Descarregar imagem'></a></td></tr></table>";
+
+          } else {
+            console.log('Directions request failed due to ' + status);
+          }
+        });
+      };
+
+      //place each parcometro on the map
+      response.G.Nf.forEach(function(parcometro) {
+        var latitudeParcometro = parseFloat(parcometro.c[0].v);
+        var longitudeParcometro = parseFloat(parcometro.c[1].v);
+        var tituloParcometro = parcometro.c[2].v.toString();
+        var carreira = parcometro.c[3].v.toString();
+        var parcometroLatLng = new google.maps.LatLng(latitudeParcometro, longitudeParcometro);
+        var pinColor = '#ffff00';
+        var pinImage = new google.maps.MarkerImage("https://chart.apis.google.com/chart?chst=d_map_pin_icon&chld=wc-male|aaaaff",
+          new google.maps.Size(24, 36),
+          new google.maps.Point(0, 0),
+          new google.maps.Point(12, 36));
+        var marker = new google.maps.Marker({
+          title: "Paragem ID: " + tituloParcometro,
+          position: parcometroLatLng,
+          icon: pinImage,
+          URL: carreira,
+          map: map
+        });
+        //uncomment following lines to add link to each Parcometro
+        /*
+        google.maps.event.addListener(marker, 'click', function(event2) {
+         window.open("https://www.parc.pt/#" + tituloParcometro,"_blank");
+        });
+        */
+      });
+    });
+    if (routeForm == "pre") {
+      // attach KML
+      document.getElementById('percursoKmDiv').innerHTML = "";
+      var georssLayer = new google.maps.KmlLayer({
+        //kml Zonas
+        url: 'https://docs.google.com/uc?id=' + idKML,
+        preserveViewport: 1
+      });
+      georssLayer.setMap(map);
+    };
+
+    //Get vertexes of the selected Carreira
+    var queryPOIS = encodeURIComponent('SELECT Latitude, Longitude, Id, Carreira FROM 1PyqmHfSwISacHkEskqKeaMFrrKejczXuXBf5B3wu WHERE Carreira = ' + zona);
+    var gvizPOISQuery = new google.visualization.Query('https://www.google.com/fusiontables/gvizdata?tq=' + queryPOIS);
+    gvizPOISQuery.send(function(response) {
+      response.G.Nf.forEach(getPOIS);
+      // assemble the POIS array with the resulting vertexes 
+      function getPOIS(item3) {
+        POIS[response.G.Nf.indexOf(item3)] = item3.c[0].v.slice(0, 9) + "," + item3.c[1].v.toString().slice(0, 9) + "," + item3.c[2].v + ",wc-male";
+      };
+      //this function renders the polygon string for the ST_INTERSECT queries
+      POIS.forEach(poligonoLinha);
+
+      //get the subsection polygons from the fusion table
+      layerCensos = new google.maps.FusionTablesLayer({
+        query: {
+          select: "\'geometry\'",
+          from: '1XZtnZKPoB3sD92kIapyzJ3dzweabrrLFisL8l12P',
+          where: 'ST_INTERSECTS(geometry' + modo + ', ' + poligonoLinhaStr + ') AND populacao > 0'
+        },
+        styles: [{
+          polygonOptions: {
+            fillColor: '#FF0000',
+            fillOpacity: '0.01',
+            strokeColor: '#FF0000',
+            strokeOpacity: '0.05',
+            strokeWeight: '5'
+          }
+        }]
+      });
+      
+      // fusion tables require another query to get the sums for the selected Zona
+      var queryPopulacaoTotal = encodeURIComponent('SELECT SUM(populacao) as \'populacao\', SUM(N_INDIVIDUOS_RESIDENT_MENOR) as \'menores\', SUM(N_INDIVIDUOS_RESIDENT_65) as \'seniores\', SUM(N_IND_RESID_PENS_REFORM) as \'reformados\', SUM(N_IND_RESID_SEM_ACT_ECON) as \'inactivos\', SUM(N_IND_RESID_ESTUD_MUN_RESID) as \'estudantes\', SUM(N_IND_RESID_DESEMP_PROC_EMPRG) as \'desempregados\', SUM(N_IND_RESID_EMPREGADOS) as \'empregados\', SUM(N_INDIV_RESIDENT_N_LER_ESCRV) as \'analfabetos\', SUM(N_INDIVIDUOS_RESIDENT_15A24) as \'15A24\', SUM(N_RES_HABITUAL_ESTAC_1) as \'estacionamento1\', SUM(N_RES_HABITUAL_ESTAC_2) as \'estacionamento2\', SUM(N_RES_HABITUAL_ESTAC_3) as \'estacionamento3\' FROM 1XZtnZKPoB3sD92kIapyzJ3dzweabrrLFisL8l12P WHERE ST_INTERSECTS(geometry' + modo + ',' + poligonoLinhaStr + ') AND populacao > 0');
+      var gvizQuery = new google.visualization.Query('https://www.google.com/fusiontables/gvizdata?tq=' + queryPopulacaoTotal);
+      gvizQuery.send(function(response) {
+        populacaoTotal = response.getDataTable().Nf[0].c[0].v;
+        populacaoMenorTotal = response.getDataTable().Nf[0].c[1].v;
+        populacaoSeniorTotal = response.getDataTable().Nf[0].c[2].v;
+        populacaoReforTotal = response.getDataTable().Nf[0].c[3].v;
+        populacaoSemActTotal = response.getDataTable().Nf[0].c[4].v;
+        populacaoEstudanteTotal = response.getDataTable().Nf[0].c[5].v;
+        populacaoDesempregadoTotal = response.getDataTable().Nf[0].c[6].v;
+        populacaoEmpregadoTotal = response.getDataTable().Nf[0].c[7].v;
+        populacaoAnalfabetoTotal = response.getDataTable().Nf[0].c[8].v;
+        populacao15A24Total = response.getDataTable().Nf[0].c[9].v;
+        estacionamento1 = response.getDataTable().Nf[0].c[10].v;
+        estacionamento2 = response.getDataTable().Nf[0].c[11].v;
+        estacionamento3 = response.getDataTable().Nf[0].c[12].v;
+      });
+
+      google.maps.event.addListener(layerCensos, 'click', function(event) {
+        var lugar = event.row['LUG11DESIG'].value.replace(/APS/g, "ã");
+        lugar = lugar.replace(/A!/g, "á");
+        var legendHTML = '<table><tr><td colspan=2><b>Localidade:</b> ' + lugar + '</td></tr>';
+        legendHTML = legendHTML + "<tr><th style='border-bottom:1px solid black;border-top:1px solid black;'>Variável</th><th style='border-bottom:1px solid black;border-top:1px solid black;'>Carreira " + zona + "</th><!--th style='border-bottom:1px solid black;border-top:1px solid black;'>Subsecção <code> " + event.row['BGRI11'].value + "</code></th--></tr>";
+        legendHTML = legendHTML + "<tr><td>Até 19 anos:</td><td align=right>" + populacaoMenorTotal + "</td><!--td align=right>" + event.row['N_INDIVIDUOS_RESIDENT_MENOR'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_INDIVIDUOS_RESIDENT_MENOR'].value) / parseFloat(populacaoMenorTotal))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td>20 a 64 anos:</td><td align=right>" + (parseInt(populacaoTotal) - parseInt(populacaoMenorTotal) - parseInt(populacaoSeniorTotal)) + "</td><!--td align=right>" + (parseInt(event.row['populacao'].value) - parseInt(event.row['N_INDIVIDUOS_RESIDENT_MENOR'].value) - parseInt(event.row['N_INDIVIDUOS_RESIDENT_65'].value)) + " (" + (100 * parseFloat(parseFloat((parseInt(event.row['populacao'].value) - parseInt(event.row['N_INDIVIDUOS_RESIDENT_MENOR'].value) - parseInt(event.row['N_INDIVIDUOS_RESIDENT_65'].value))) / parseFloat((parseInt(populacaoTotal) - parseInt(populacaoMenorTotal) - parseInt(populacaoSeniorTotal))))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td style='border-bottom:1px solid black;'>65+ anos:</td><td align=right style='border-bottom:1px solid black;'>" + populacaoSeniorTotal + "</td><!--td align=right  style='border-bottom:1px solid black;'>" + event.row['N_INDIVIDUOS_RESIDENT_65'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_INDIVIDUOS_RESIDENT_65'].value) / parseFloat(populacaoSeniorTotal))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td style='border-bottom:1px solid black;'><b>Total de indivíduos</b></td><td align=right style='border-bottom:1px solid black;'><b>" + populacaoTotal + "</b></td><!--td align=right style='border-bottom:1px solid black;'><b>" + event.row['populacao'].value + " (" + (100 * parseFloat(parseFloat(event.row['populacao'].value) / parseFloat(populacaoTotal))).toFixed(1) + "%)</b></td--></tr>";
+        legendHTML = legendHTML + "<tr><td>Reformados e Pensionistas:</td><td align=right>" + populacaoReforTotal + "</td><!--td align=right>" + event.row['N_IND_RESID_PENS_REFORM'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_IND_RESID_PENS_REFORM'].value) / parseFloat(populacaoReforTotal))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td>Empregados:</td><td align=right>" + populacaoEmpregadoTotal + "</td><!--td align=right>" + event.row['N_IND_RESID_EMPREGADOS'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_IND_RESID_EMPREGADOS'].value) / parseFloat(populacaoEmpregadoTotal))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td>Sem actividade económica:</td><td align=right>" + populacaoSemActTotal + "</td><!--td align=right>" + event.row['N_IND_RESID_SEM_ACT_ECON'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_IND_RESID_SEM_ACT_ECON'].value) / parseFloat(populacaoSemActTotal))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td style='border-bottom:1px solid black;'>Desempregados:</td><td align=right style='border-bottom:1px solid black;'>" + populacaoDesempregadoTotal + "</td><!--td align=right style='border-bottom:1px solid black;'>" + event.row['N_IND_RESID_DESEMP_PROC_EMPRG'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_IND_RESID_DESEMP_PROC_EMPRG'].value) / parseFloat(populacaoDesempregadoTotal))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td>Estudantes:</td><td align=right>" + populacaoEstudanteTotal + "</td><!--td align=right>" + event.row['N_IND_RESID_ESTUD_MUN_RESID'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_IND_RESID_ESTUD_MUN_RESID'].value) / parseFloat(populacaoEstudanteTotal))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td style='border-bottom:1px solid black;'>Analfabetos:</td><td align=right style='border-bottom:1px solid black;'>" + populacaoAnalfabetoTotal + "</td><!--td align=right style='border-bottom:1px solid black;'>" + event.row['N_INDIV_RESIDENT_N_LER_ESCRV'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_INDIV_RESIDENT_N_LER_ESCRV'].value) / parseFloat(populacaoAnalfabetoTotal))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td>Aloj. c/ estac. 1 veículo:</td><td align=right>" + estacionamento1 + "</td><!--td align=right>" + event.row['N_RES_HABITUAL_ESTAC_1'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_RES_HABITUAL_ESTAC_1'].value) / parseFloat(estacionamento1))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td>Aloj. c/ estac. 2 veículos:</td><td align=right >" + estacionamento2 + "</td><!--td align=right >" + event.row['N_RES_HABITUAL_ESTAC_2'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_RES_HABITUAL_ESTAC_2'].value) / parseFloat(estacionamento2))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td style='border-bottom:1px solid black;'>Aloj. c/ estac. 3 ou + veículos:</td><td align=right style='border-bottom:1px solid black;'>" + estacionamento3 + "</td><!--td align=right style='border-bottom:1px solid black;'>" + event.row['N_RES_HABITUAL_ESTAC_3'].value + " (" + (100 * parseFloat(parseFloat(event.row['N_RES_HABITUAL_ESTAC_3'].value) / parseFloat(estacionamento3))).toFixed(1) + "%)</td--></tr>";
+        legendHTML = legendHTML + "<tr><td style='border-bottom:1px solid black;'><b>Mín. veículos c/ estac. próprio:</b></td><td align=right style='border-bottom:1px solid black;'><b>" + (parseInt(estacionamento1) + 2 * parseInt(estacionamento2) + 3 * parseInt(estacionamento3)) + "</b></td><!--td align=right style='border-bottom:1px solid black;'><b>" + (parseInt(event.row['N_RES_HABITUAL_ESTAC_1'].value) + 2 * parseInt(event.row['N_RES_HABITUAL_ESTAC_2'].value) + 3 * parseInt(event.row['N_RES_HABITUAL_ESTAC_3'].value)) + " (" + (100 * parseFloat(parseFloat((parseInt(event.row['N_RES_HABITUAL_ESTAC_1'].value) + 2 * parseInt(event.row['N_RES_HABITUAL_ESTAC_2'].value) + 3 * parseInt(event.row['N_RES_HABITUAL_ESTAC_3'].value))) / parseFloat((parseInt(estacionamento1) + 2 * parseInt(estacionamento2) + 3 * parseInt(estacionamento3))))).toFixed(1) + "%)</b></td--></tr>";
+        legendHTML = legendHTML + "</table>";
+        event.infoWindowHtml = legendHTML;
+      });
+      layerCensos.setMap(map);
+    });
+
+    //render the polygon string for the ST_INTERSECT queries. 
+    function poligonoLinha(item2) {
+      var coords2 = item2.split(",");
+      var latitude2 = parseFloat(coords2[0].replace(/\s*\,.*/, ''));
+      var longitude2 = parseFloat(coords2[1].replace(/\s*\,.*/, ''));
+      var latitude0,longitude0
+      if (POIS.length > 1) {
+        if (POIS.indexOf(item2) == 0) {
+          poligonoLinhaStr = "POLYGON(";
+          latitude0 = latitude2;
+          longitude0 = longitude2;
+        };
+        poligonoLinhaStr = poligonoLinhaStr + "LATLNG(" + latitude2 + ", " + longitude2 + ")";
+        if (POIS.indexOf(item2) != (POIS.length - 1)) {
+          poligonoLinhaStr = poligonoLinhaStr + ",";
+        } else {
+          poligonoLinhaStr = poligonoLinhaStr + ")";
+        };
+      } else {
+        poligonoLinhaStr = "CIRCLE(LATLNG(" + latitude2 + "," + longitude2 + "),100)";
+        latitude0 = latitude2;
+        longitude0 = longitude2;
+        return;
+      };
+      map.setCenter(new google.maps.LatLng(latitude2, longitude2));
+    };
+  };
+};
+main();
+</script>
+<style>
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+#selector {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 99;
+  font-size: 11pt;
+  width:310px;
+  font-family: Arial, Helvetica;
+  border-top: 2px solid grey;
+  border-left: 2px solid grey;
+  border-right: 3px solid black;
+  border-bottom: 3px solid black;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 3px;
+}
+#percursoKmDiv {
+  position: absolute;
+  top: 265px;
+  left: 10px;
+  width:310px;
+  z-index: 99;
+  font-size: 11pt;
+  font-family: Arial, Helvetica;
+  border-top: 2px solid grey;
+  border-left: 2px solid grey;
+  border-right: 3px solid black;
+  border-bottom: 3px solid black;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 3px;
+}
+img {
+  border-top: 1px solid grey;
+  border-left: 1px solid grey;
+  border-right: 2px solid black;
+  border-bottom: 2px solid black;
+  border-radius: 3px;
+}
+#selectorForm,
+#interceptForm,
+#isochroneForm,
+#routeForm,
+#tempoTerminal,
+#tempoParagem, {
+  z-index: 98;
+  font-size: 9pt;
+  font-family: Arial, Helvetica;
+  border: 0px solid black;
+  background: rgba(255, 255, 255, 0);
+  padding: 3px;
+  text-align: right;
+}
+
+#left-panel {
+  display: inline;
+  width: 15pc;
+}
+td {
+  border-bottom: 1px solid #aaaaaa;
+}
+
+</style>
+</head>
+
+
+<body>
+  <div id="map"></div>
+  <div id="selector">
+    <table border=0>
+      <tr>
+        <td colspan=2 style="background-image: url('http://www.cm-cascais.pt/sites/default/files/styles/empresa-right/public/imagens/empresas/new/logo_cproxima.png');background-repeat: no-repeat;background-attachment: fixed;background-position: -36px -5px;" height=60></td>
+      </tr>
+      <tr>
+        <td>Circuito:</td>
+        <td align=right><select id="selectorForm" onchange="main()">
+          <option value="1001">Cascais Parques</option>
+          <option value="1002">shuttle 1002 (proposta)</option>
+          <option value="1003">shuttle 1003 (proposta)</option>
+          <option value="1004">shuttle 1004 (proposta)</option>
+          <option value="1005">shuttle 1005 (proposta)</option>
+          <option value="1006">shuttle 1006 (proposta)</option>
+          <option value="1007">shuttle 1007 (proposta)</option>
+          
+          <option value="1008">shuttle 1008 (proposta)</option>
+          <option value="1009" selected>Carcavelos - SDR</option>
+          <option value="1011">Cascais - Guincho</option>
+          <option value="435546">CUF</option>
+          <option value="400">Scotturb 400</option>
+          <option value="401">Scotturb 401</option>
+          <option value="404">Scotturb 404</option>
+          <option value="427">BusCas 427</option>
+          <option value="1010">SurfBus</option>
+      </select></td>
+      </tr>
+      <tr>
+        <td>Modo de intersecção:</td>
+        <td align=right><select id="interceptForm" onchange="main()">
+        <option value="" selected>Aresta</option>
+        <option value="_pos">Centro</option>
+      </select></td>
+      </tr>
+        <!--tr>
+          <td>Mostrar isócronas:</td>
+           <td align=right><select id="isochroneForm" onchange="main()">
+            <option value="true">Sim</option>
+            <option value="false" selected>Não</option>
+      </select></td>
+        </tr-->
+        <tr>
+          <td>Cálculo de rota:</td>
+          <td align=right><select id="routeForm" onchange="main()">
+          <option value="pre">Manual</option>
+          <option value="auto" selected>Automático</option>
+      </select></td>
+        </tr>
+        <tr>
+          <td>Tempo em terminal:</td>
+          <td align=right><select id="tempoTerminal" onchange="main()">
+          <option value="120">2 min.</option>
+          <option value="300">5 min.</option>
+          <option value="600">10 min.</option>
+          <option value="0" selected>igual a paragem</option>
+      </select></td>
+        </tr>
+        <tr>
+          <td>Tempo em paragem:</td>
+          <td align=right><select id="tempoParagem" onchange="main()">
+          <option value="5">5 seg.</option>
+            <option value="10">10 seg.</option>
+          <option value="15">15 seg.</option>
+          <option value="20" selected>20 seg.</option>
+            <option value="25">25 seg.</option>
+          <option value="30">30 seg.</option>
+          <option value="60">1 min.</option>
+      </select></td>
+        </tr>
+        <tr>
+          <td>Nº de veículos:</td>
+          <td align=right><select id="numberVehicles" onchange="main()">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+      </select></td>
+        </tr>
+    </table>
+  </div>
+  <div id="percursoKmDiv"></div>
+
+</body>
+</html>
